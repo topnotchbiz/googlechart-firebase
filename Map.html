@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <title>FIREBASE TEST</title>
+        <style type="text/css">
+            a:link {color: black; font-size: 12}      /* unvisited link */
+            a:visited {color: black; font-size: 12}   /* visited link */
+            a:hover {color: grey; font-size: 12}     /* mouse over link */
+            a:active {color: grey; font-size: 12}    /* selected link */
+            a:link {color: grey; font-size: 12}      /* unvisited link */
+
+            #map {
+                height:800px;
+                margin-left:auto;
+                margin-right:auto;
+                max-width:1200px;
+                width: 100%;
+            }
+            /* Optional: Makes the sample page fill the window. */
+            html, body {
+                height: 100%;
+                padding: 0;
+            }
+
+        </style>
+        <script type="text/javascript" src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+        <!--        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>-->
+        <div id="firebase_data"></div>
+    </head>
+    <body>
+        <div id="wrapper">
+            <!-- <div id = "header">-->
+
+            <!--<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d180794.0127903852!2d126.84946448859428!3d37.565017241788254!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca28b61c565cd%3A0x858aedb4e4ea83eb!2sSeoul%2C+South+Korea!5e1!3m2!1sen!2sus!4v1498858519291" width="1200" height="600" frameborder="0" style="border:0" allowfullscreen></iframe>
+            </div>-->
+        </div>
+
+        <!--MAPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP-->
+
+        <button type="button" data-ele="T" class="active-btn">Temperature</button>
+        <button type="button" data-ele="Hum">Humidity</button>
+        <button type="button" data-ele="Part1">CO2</button>
+        <button type="button" data-ele="O3">O3</button>
+        <button type="button" data-ele="Bat">PM 2.5</button>
+
+        <div id="map"></div>
+
+        <script>
+            /*google.charts.load('current', {'packages':['corechart']});
+            google.charts.setOnLoadCallback(drawChart);*/
+
+            function initMap() {
+                var map, infoWindow, marker, heatmap, circles=[];
+
+                var storinglocs = [];
+
+                map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 13,
+                    center: {lat: 37.5665, lng: 126.9780},
+                    mapTypeId: 'satellite'
+                });
+
+                marker = new google.maps.Marker({
+                    position: {lat: 37.5665, lng: 126.9780},
+                    map: map,
+                });
+
+                infoWindow = new google.maps.InfoWindow;
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setCenter(pos);
+
+                        marker.setMap(null);
+
+                        // set the new one
+                        marker = new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                        });
+
+                        }, function() {
+                            handleLocationError(true, infoWindow, map.getCenter());
+                    });
+                } else {
+                    // Browser doesn't support Geolocation
+                    handleLocationError(false, infoWindow, map.getCenter());
+                }
+
+                function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+                    infoWindow.setPosition(pos);
+                    infoWindow.setContent(browserHasGeolocation ?
+                        'Error: The Geolocation service failed.' :
+                        'Error: Your browser doesn\'t support geolocation.');
+                    infoWindow.open(map);
+                }
+
+                var trafficLayer = new google.maps.TrafficLayer();
+                trafficLayer.setMap(map)
+
+                // Initialize Firebase
+                var config = {
+                    apiKey: "AIzaSyCpx7Uz54s0KW9_hQi4O0N9dAck6c8HfWo",
+                    authDomain: "seoulsensing.firebaseapp.com",
+                    databaseURL: "https://seoulsensing.firebaseio.com",
+                    projectId: "seoulsensing",
+                    storageBucket: "seoulsensing.appspot.com",
+                    messagingSenderId: "167686527591"
+
+                };
+
+                // Start firebase app
+                firebase.initializeApp(config);
+
+                // Set up database connection and reference to data
+                var database = firebase.database();
+                var data = database.ref('SeoulTest01/data');
+                // Listen for changes in value
+                data.limitToLast(1000).on('value', function(snapshot) {
+
+                    // Define an array for Google Charts
+                    var dataArray = {}
+                    var dataArrayTemp = []
+                    var dataArrayHum = []
+                    var dataArrayPart1 = []
+                    var dataArrayO3 = []
+                    var dataArrayBat = []
+
+                    var dataArrayLat = []
+                    var dataArrayLng = []
+                    var dataArrayT = []
+
+                    var timeArray =[]
+                    // Fake a placeholder dummy value for time
+
+                    // Get values from data snapshot
+                    // val is a function of DataSnapshot
+                    var data = snapshot.val();
+
+                    // TODO: Add date handling to convert Date to standard from
+                    // https://developers.google.com/chart/interactive/docs/datesandtimes#dates-and-times-using-the-date-string-representation
+
+                    for (i in data) {
+
+                        var timeString = data[i].ts
+                        var splitTime = timeString.split("T")
+                        var dateS = splitTime[0]
+                        var dataSplit = dateS.split("-")
+                        var yearS = dataSplit[0]
+                        var MonthS = dataSplit[1]
+                        var DayS= dataSplit[2]
+                        var timeS = splitTime[1]
+                        var timeSplit = timeS.split(":")
+                        var HourS = timeSplit[0]
+                        var MinS = timeSplit[1]
+                        var SecondsS = timeSplit[2]
+
+                        var milli = timeSplit[2]
+                        var newSec = milli.substring(0, 2)
+                        var newMilli = milli.substring(3, 6)
+
+                        var nowtime =  new Date(parseInt(yearS), parseInt(MonthS), parseInt(DayS), parseInt(HourS), parseInt(MinS), parseInt(newSec), parseInt(newMilli))
+                        timeArray.push(nowtime)
+                        row = [nowtime, parseInt(data[i].valCO2)]
+                        row1 = [nowtime, parseInt(data[i].Temp)]
+                        row2 = [nowtime, parseInt(data[i].Hum)]
+                        row3 = [nowtime, parseInt(data[i].PM25_ugm3)]
+                        row4 = [nowtime, parseInt((data[i].ppmO3)*1000)]
+                        row5 = [nowtime, parseInt(data[i].Bat)]
+
+                        if(data[i].gpsdatalat==0 && data[i].gpsdatalng==0) {
+                            continue;    
+                        }
+
+                        dataArrayLat.push(parseFloat(data[i].gpsdatalat));
+                        dataArrayLng.push(parseFloat(data[i].gpsdatalng));
+                        dataArrayT.push(parseInt(data[i].Temp));
+                        dataArrayHum.push(parseInt(data[i].Hum));
+                        dataArrayPart1.push(parseInt(data[i].PM25_ugm3));
+                        dataArrayO3.push(parseInt(data[i].ppmO3));
+                        dataArrayBat.push(parseInt(data[i].Bat));
+
+                    }
+
+                    dataArray['T'] = dataArrayT;
+                    dataArray['Hum'] = dataArrayHum;
+                    dataArray['Part1'] = dataArrayPart1;
+                    dataArray['O3'] = dataArrayO3;
+                    dataArray['Bat'] = dataArrayBat;
+
+                    var myLatLngB = {lat:  dataArrayLat, lng: dataArrayLng};
+
+                    heatmap = new google.maps.visualization.HeatmapLayer({
+                        data: getPoints(),
+                        radius: 30,
+                        map: map
+                    });
+
+                    drawCircles(myLatLngB, dataArray, $('.active-btn').attr('data-ele'));
+
+                    function drawCircles(myLatLngB, dataArray, ele) {
+
+                        for(var i=0; i<circles.length; i++) {
+                            circles[i].setMap(null);
+                        }
+
+                        for (var loc in myLatLngB.lat){
+                            var newCircle = new google.maps.Circle({
+                                //strokeColor: '#FF0000',
+                                strokeOpacity: 0.0,
+                                strokeWeight: 2,
+                                // fillColor: rgbToHex(map_range(dataArray[ele][loc],20,40,200,255),0,0),
+                                fillColor: rgbToHex(dataArray[ele][loc], ele),
+                                //fillColor: '#FF0000',
+                                fillOpacity: 0.7,
+                                map: map,
+                                center: {lat: parseFloat(myLatLngB.lat[loc]), lng: parseFloat(myLatLngB.lng[loc])},
+                                radius: dataArray[ele][loc]*3
+                            });
+
+                            circles.push(newCircle);
+                        }
+                    }
+
+                    function getPoints() {
+                        var latlngs = [];
+                        for (var i = 0; i < myLatLngB.lat.length; i++){
+                            latlngs.push(new google.maps.LatLng(myLatLngB.lat[i], myLatLngB.lng[i]));
+                            // latlngs.push({location: new google.maps.LatLng(myLatLngB.lat[i], myLatLngB.lng[i]), weight: (dataArrayT[i]*10)})
+                        }
+                        return latlngs;
+                    }
+
+                    function getRads() {
+                        var rads =[];
+                        for (var i = 0; i < dataArrayT.length; i++){
+                            //latlngs.push(new google.maps.LatLng(myLatLngB.lat[i], myLatLngB.lng[i]));
+                            rads.push(parseFloat(dataArrayT[i]))
+                        }
+                        return rads;
+                    }
+
+                    function map_range(value, low1, high1, low2, high2) {
+
+                        var r =  low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+                        return Math.floor(r);
+                    }
+
+                    function componentToHex(c) {
+                        var hex = c.toString(16);
+                        return hex.length == 1 ? "0" + hex : hex;
+                    }
+
+                    function rgbToHex(value, ele) {
+                        switch(ele) {
+                            case 'T':
+                                var start_color = { "r": 50, "g": 0, "b": 0};
+                                var end_color = { "r": 255, "g": 0, "b": 0};                            
+                                var minVal = 20;
+                                var maxVal = 40;
+                                break;
+                            case 'Hum':
+                                var start_color = { "r": 0, "g": 0, "b": 50};
+                                var end_color = { "r": 0, "g": 0, "b": 255};                            
+                                var minVal = 0;
+                                var maxVal = 100;
+                                break;
+                            case 'Part1':
+                                var start_color = { "r": 0, "g": 50, "b": 0};
+                                var end_color = { "r": 0, "g": 255, "b": 0};                            
+                                var minVal = 0;
+                                var maxVal = 500;
+                                break;
+                            case 'O3':
+                                var start_color = { "r": 50, "g": 30, "b": 0};
+                                var end_color = { "r": 255, "g": 165, "b": 0};                            
+                                var minVal = 0;
+                                var maxVal = 50;
+                                break;
+                            case 'Bat':
+                                var start_color = { "r": 230, "g": 230, "b": 230};
+                                var end_color = { "r": 128, "g": 128, "b": 128};                            
+                                var minVal = 0;
+                                var maxVal = 100;
+                                break;
+                        }
+
+                        var start_color = { "r": 0, "g": 255, "b": 0};
+                        var middle_color = { "r": 255, "g": 255, "b": 0};
+                        var end_color = { "r": 255, "g": 0, "b": 0};                            
+
+                        if(value>(maxVal+minVal)/2) {
+                            var r = parseInt(parseFloat(middle_color.r) * (value-(maxVal+minVal)/2)/(maxVal-(maxVal+minVal)/2) + parseFloat(end_color.r) * (maxVal-value)/(maxVal-(maxVal+minVal)/2));
+                            var g = parseInt(parseFloat(middle_color.g) * (value-(maxVal+minVal)/2)/(maxVal-(maxVal+minVal)/2) + parseFloat(end_color.g) * (maxVal-value)/(maxVal-(maxVal+minVal)/2));
+                            var b = parseInt(parseFloat(middle_color.b) * (value-(maxVal+minVal)/2)/(maxVal-(maxVal+minVal)/2) + parseFloat(end_color.b) * (maxVal-value)/(maxVal-(maxVal+minVal)/2));
+                        } else {
+                            var r = parseInt(parseFloat(start_color.r) * (value-minVal)/((maxVal+minVal)/2-minVal) + parseFloat(middle_color.r) * ((maxVal+minVal)/2-value)/((maxVal+minVal)/2-minVal));
+                            var g = parseInt(parseFloat(start_color.g) * (value-minVal)/((maxVal+minVal)/2-minVal) + parseFloat(middle_color.g) * ((maxVal+minVal)/2-value)/((maxVal+minVal)/2-minVal));
+                            var b = parseInt(parseFloat(start_color.b) * (value-minVal)/((maxVal+minVal)/2-minVal) + parseFloat(middle_color.b) * ((maxVal+minVal)/2-value)/((maxVal+minVal)/2-minVal));                            
+                        }
+
+                        console.log("#" + componentToHex(r) + componentToHex(g) + componentToHex(b))
+                        return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+                    }
+
+                    $(document).ready(function() {
+                        $("button").click(function(){
+                            $("button.active-btn").removeClass('active-btn');
+                            $(this).addClass('active-btn');
+                            drawCircles(myLatLngB, dataArray, $(this).attr('data-ele'));
+                        });
+                    });
+
+                    }, google);    
+            }
+        </script>
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAWU7nHcqYkJIZC2g_6iKVfdLzx0WEbZMs&callback=initMap&libraries=visualization"></script>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    </body>
+</html>

@@ -1,0 +1,93 @@
+body {
+	background: #ffffff;
+	text-align: center;
+}
+
+#wrapper {
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#header{
+	position: fixed;
+    margin-top: 0px;
+    margin-bottom: 100px;
+		background:#ffffff;
+		margin-left:-10px;
+		z-index: 10;
+
+
+}
+
+button {
+    background-color: none
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+#main{
+	width: auto;
+	height: auto;
+	background: #ffffff;
+	margin: auto;
+	text-align:justify
+}
+#curve_chart{
+z-index: 5;
+}
+h1{
+	text-align: left;
+	margin-top: 50px;
+	font-family: "helvetica";
+	font-weight: bold;
+	font-size: 18pt;
+	color: #000000;
+	line-height: 0.0;
+}
+h2{
+	text-align: left;
+	font-family: "helvetica";
+	font-size: 9pt;
+	color: #000000;
+	line-height: 2.0;
+	margin-left: 250;
+
+}
+
+h3{
+	text-align: right;
+	font-family: "helvetica";
+	font-weight: bold;
+	font-size: 14pt;
+	color: #000000;
+
+}
+
+p{
+	font-family: "helvetica";
+	font-size: 11pt;
+	font-weight: lighter;
+	color: #424242;
+	margin-left:auto;
+	text-align: justify;
+	text-indent: 0px;
+	width: 100%;
+
+
+}
+
+hr {
+    display: block;
+    margin-top: 2.5em;
+    margin-bottom: 0.5em;
+    margin-left: auto;
+    margin-right: auto;
+    border-style: solid;
+    border-width: 1px;
+		width: 100%;
+}

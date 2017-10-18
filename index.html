@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <title>FIREBASE TEST</title>
+
+        <style type="text/css">
+            a:link {color: black; font-size: 12}      /* unvisited link */
+            a:visited {color: black; font-size: 12}   /* visited link */
+            a:hover {color: grey; font-size: 12}     /* mouse over link */
+            a:active {color: grey; font-size: 12}    /* selected link */
+            a:link {color: grey; font-size: 12}      /* unvisited link */
+
+            #map {
+                margin-left:auto;
+                margin-right:auto;
+            }
+            /* Optional: Makes the sample page fill the window. */
+            html, body {
+                height: 100%;
+                padding: 0;
+            }
+
+            .links {
+                float: right;
+                display: inline-block;
+            }
+
+            .links a {
+                padding-right: 8px;
+                padding-left: 8px;
+            }
+
+            @media (max-width: 1219px) {
+                h1 b {
+                text-align: center;
+                display: block;
+                font-size: 24px;
+            }
+            .links {
+                float: none;
+                display: block;
+                text-align: center;
+            }      
+            .links a {
+            }          
+            }
+
+            @media (max-width: 767px) {
+                .links {
+                display: block;
+            }
+            .links a {
+                text-align: center;
+            }
+            
+            h1 b {
+                font-size: 20px;
+            }            
+            }
+
+            #header {
+                position: fixed;
+                background: white;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                top: 0;
+            }
+        </style>
+        <script type="text/javascript" src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script>
+            // Load the Visualization API and the corechart package.
+            google.charts.load('current', {'packages':['corechart']});
+            // Set a callback to run when the Google Visualization API is loaded.
+            google.charts.setOnLoadCallback(drawChart);
+
+            var skipGettingData = false;
+            var data;
+
+            function drawChart() {
+                var headerHeight = $("#header").height();
+                $("#wrapper").css('padding-top', headerHeight+'px');
+
+                if(skipGettingData==false) {
+                    // Initialize Firebase
+                    var config = {
+
+                        apiKey: "AIzaSyCpx7Uz54s0KW9_hQi4O0N9dAck6c8HfWo",
+                        authDomain: "seoulsensing.firebaseapp.com",
+                        databaseURL: "https://seoulsensing.firebaseio.com",
+                        projectId: "seoulsensing",
+                        storageBucket: "seoulsensing.appspot.com",
+                        messagingSenderId: "167686527591"
+
+                    };
+
+                    // Start firebase app
+                    firebase.initializeApp(config);                    
+
+                    // Set up database connection and reference to data
+                    var database = firebase.database();
+                    data = database.ref('SeoulTest01/data');
+                }
+
+                // Listen for changes in value
+                data.limitToLast(1000).on('value', function(snapshot) {
+
+                    // Define an array for Google Charts
+                    var dataArray = {}
+                    var dataArrayTemp = {}
+                    var dataArrayHum = {}
+                    var dataArrayPart1 = {}
+                    var dataArrayO3 = {}
+                    var dataArrayBat = {}
+
+                    var timeArray =[]
+                    // Fake a placeholder dummy value for time
+
+                    // Get values from data snapshot
+                    // val is a function of DataSnapshot
+                    var data = snapshot.val();
+
+                    // TODO: Add date handling to convert Date to standard from
+                    // https://developers.google.com/chart/interactive/docs/datesandtimes#dates-and-times-using-the-date-string-representation
+
+                    for (i in data) {
+
+                        var timeString = data[i].ts
+                        var splitTime = timeString.split("T")
+                        var dateS = splitTime[0]
+                        var dataSplit = dateS.split("-")
+                        var yearS = dataSplit[0]
+                        var MonthS = dataSplit[1]
+                        var DayS= dataSplit[2]
+                        var timeS = splitTime[1]
+                        var timeSplit = timeS.split(":")
+                        var HourS = timeSplit[0]
+                        var MinS = timeSplit[1]
+                        var SecondsS = timeSplit[2]
+
+                        var milli = timeSplit[2]
+                        var newSec = milli.substring(0, 2)
+                        var newMilli = milli.substring(3, 6)
+
+                        var nowtime =  new Date(parseInt(yearS), parseInt(MonthS)-1, parseInt(DayS), parseInt(HourS), parseInt(MinS), parseInt(newSec), parseInt(newMilli))
+                        timeArray.push(nowtime)
+                        row = [nowtime, parseInt(data[i].valCO2)]
+                        row1 = [nowtime, parseInt(data[i].Temp)]
+                        row2 = [nowtime, parseInt(data[i].Hum)]
+                        row3 = [nowtime, parseInt(data[i].PM25_ugm3)]
+                        row4 = [nowtime, parseInt((data[i].ppmO3)*1000)]
+                        row5 = [nowtime, parseInt(data[i].Bat)]
+
+                        if(typeof dataArray[data[i].ID] == 'undefined') {
+                            dataArray[data[i].ID] = [];
+                        }
+
+                        if(typeof dataArrayTemp[data[i].ID] == 'undefined') {
+                            dataArrayTemp[data[i].ID] = [];
+                        }
+
+                        if(typeof dataArrayHum[data[i].ID] == 'undefined') {
+                            dataArrayHum[data[i].ID] = [];
+                        }
+
+                        if(typeof dataArrayPart1[data[i].ID] == 'undefined') {
+                            dataArrayPart1[data[i].ID] = [];
+                        }
+
+                        if(typeof dataArrayO3[data[i].ID] == 'undefined') {
+                            dataArrayO3[data[i].ID] = [];
+                        }
+
+                        if(typeof dataArrayBat[data[i].ID] == 'undefined') {
+                            dataArrayBat[data[i].ID] = [];
+                        }
+
+                        if(row) {
+                            dataArray[data[i].ID].push(row);                            
+                        }
+
+                        if(row1) {                        
+                            dataArrayTemp[data[i].ID].push(row1);
+                        }
+
+                        if(row2) {                        
+                            dataArrayHum[data[i].ID].push(row2);
+                        }
+
+                        if(row3) {                        
+                            dataArrayPart1[data[i].ID].push(row3);
+                        }
+
+                        if(row4) {                        
+                            dataArrayO3[data[i].ID].push(row4);
+                        }
+
+                        if(row5) {                        
+                            dataArrayBat[data[i].ID].push(row5);
+                        }
+                    }
+
+                    // TODO: Add logic to sort header
+
+                    var headersBat = ['Time', 'Bat %']
+
+                    var joinedData = new google.visualization.DataTable();
+
+                    var dt1Columns = [];
+                    var arrIndex = 0;
+
+                    for(key in dataArray) {
+                        if(arrIndex==0) {
+                            joinedData.addColumn('datetime', 'Time');
+                            joinedData.addColumn('number', 'CO2 ppm - ID: ' + key);
+                            joinedData.addRows(dataArray[key]);
+                        } else {
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Time');
+                            data.addColumn('number', 'CO2 ppm - ID: ' + key);
+                            data.addRows(dataArray[key]);
+
+                            dt1Columns.push(dt1Columns.length+1);
+
+                            joinedData = google.visualization.data.join(joinedData, data, 'full', [[0, 0]], dt1Columns, [1]);                            
+                        }
+
+                        arrIndex++;
+                    }
+
+                    var joinedDataTemp = new google.visualization.DataTable();
+
+                    var dt1Columns = [];
+                    var arrIndex = 0;
+
+                    for(key in dataArrayTemp) {
+                        if(arrIndex==0) {
+                            joinedDataTemp.addColumn('datetime', 'Time');
+                            joinedDataTemp.addColumn('number', 'Temperature ° - ID: ' + key);
+                            joinedDataTemp.addRows(dataArrayTemp[key]);
+                        } else {
+
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Time');
+                            data.addColumn('number', 'Temperature ° - ID: ' + key);
+                            data.addRows(dataArrayTemp[key]);
+
+                            dt1Columns.push(dt1Columns.length+1);
+
+                            joinedDataTemp = google.visualization.data.join(joinedDataTemp, data, 'full', [[0, 0]], dt1Columns, [1]);
+                        }
+
+                        arrIndex++;
+                    }
+
+                    var joinedDataHum = new google.visualization.DataTable();
+
+                    var dt1Columns = [];
+                    var arrIndex = 0;
+
+                    for(key in dataArrayHum) {
+                        if(arrIndex==0) {
+                            joinedDataHum.addColumn('datetime', 'Time');
+                            joinedDataHum.addColumn('number', 'Humidity % - ID: ' + key);
+                            joinedDataHum.addRows(dataArrayHum[key]);
+                        } else {
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Time');
+                            data.addColumn('number', 'Humidity % - ID: ' + key);
+                            data.addRows(dataArrayHum[key]);
+
+                            dt1Columns.push(dt1Columns.length+1);
+
+                            joinedDataHum = google.visualization.data.join(joinedDataHum, data, 'full', [[0, 0]], dt1Columns, [1]);
+                        }
+
+                        arrIndex++;
+                    }
+
+                    var joinedDataPart1 = new google.visualization.DataTable();
+                    var dt1Columns = [];
+                    var arrIndex = 0;
+
+                    for(key in dataArrayPart1) {
+                        if(arrIndex==0) {
+                            joinedDataPart1.addColumn('datetime', 'Time');
+                            joinedDataPart1.addColumn('number', 'PM25_ugm3 - ID: ' + key);
+                            joinedDataPart1.addRows(dataArrayPart1[key]);
+                        } else {
+
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Time');
+                            data.addColumn('number', 'PM25_ugm3 - ID: ' + key);
+                            data.addRows(dataArrayPart1[key]);
+
+                            dt1Columns.push(dt1Columns.length+1);
+
+                            joinedDataPart1 = google.visualization.data.join(joinedDataPart1, data, 'full', [[0, 0]], dt1Columns, [1]);
+                        }
+
+                        arrIndex++;
+                    }
+
+                    var joinedDataO3 = new google.visualization.DataTable();
+                    var dt1Columns = [];
+                    var arrIndex = 0;
+
+                    for(key in dataArrayO3) {
+                        if(arrIndex==0) {
+                            joinedDataO3.addColumn('datetime', 'Time');
+                            joinedDataO3.addColumn('number', 'O3 ppb - ID: ' + key);
+                            joinedDataO3.addRows(dataArrayO3[key]);
+                        } else {
+
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Time');
+                            data.addColumn('number', 'O3 ppb - ID: ' + key);
+                            data.addRows(dataArrayO3[key]);
+
+                            dt1Columns.push(dt1Columns.length+1);
+
+                            joinedDataO3 = google.visualization.data.join(joinedDataO3, data, 'full', [[0, 0]], dt1Columns, [1]);
+                        }
+
+                        arrIndex++;
+                    }
+
+                    var joinedDataBat = new google.visualization.DataTable();
+                    var dt1Columns = [];
+                    var arrIndex = 0;
+
+                    for(key in dataArrayBat) {
+                        if(arrIndex==0) {
+                            joinedDataBat.addColumn('datetime', 'Time');
+                            joinedDataBat.addColumn('number', 'Bat % - ID: ' + key);
+                            joinedDataBat.addRows(dataArrayBat[key]);
+                        } else {
+
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Time');
+                            data.addColumn('number', 'Bat % - ID: ' + key);
+                            data.addRows(dataArrayBat[key]);
+
+                            dt1Columns.push(dt1Columns.length+1);
+
+                            joinedDataBat = google.visualization.data.join(joinedDataBat, data, 'full', [[0, 0]], dt1Columns, [1]);
+                        }
+                        
+                        arrIndex++;
+                    }
+
+                    //title: 'MUST Sensing Kit #1'
+                    var options = {
+                        curveType: 'function', //here I am looking for just polyline connecting the data points
+                        legend: { position: 'bottom' },
+                        chartArea : { left: 50, right:20, width: $(window).innerWidth() },
+                        hAxis: { format: ' MM/dd/yy H:mm'},
+                        width: $(window).innerWidth(),
+                        interpolateNulls: true
+
+                    };
+
+                    var chart = new this.visualization.LineChart(document.getElementById('curve_chart'));
+                    chart.draw(joinedData, options);
+                    var chartTemp = new this.visualization.LineChart(document.getElementById('curve_chartTemp'));
+                    chartTemp.draw(joinedDataTemp, options);
+                    var chartHum = new this.visualization.LineChart(document.getElementById('curve_chartHum'));
+                    chartHum.draw(joinedDataHum, options);
+                    var chartPart1 = new this.visualization.LineChart(document.getElementById('curve_chartPart1'));
+                    chartPart1.draw(joinedDataPart1, options);
+                    var chartO3 = new this.visualization.LineChart(document.getElementById('curve_chartO3'));
+                    chartO3.draw(joinedDataO3, options);
+                    var chartBat = new this.visualization.LineChart(document.getElementById('curve_chartBat'));
+                    chartBat.draw(joinedDataBat, options);
+
+                    },
+                    google);
+            }
+
+            $(window).resize(function() {
+                skipGettingData=true;
+                drawChart();
+            });
+
+        </script>
+        <div id="firebase_data"></div>
+    </head>
+    <body>
+        <div id="wrapper">
+            <!-- <div id = "header">-->
+
+            <div id = "header">
+                <h1>
+                    <b>
+                        MUST | Mobile Urban Sensing Technologies
+                        <div class="links">
+                            <a href="Support.html">Customer Support</a><a href="Map.html">Map</a>
+                        </div>
+                    </b>
+                </h1>
+                <hr>
+            </div>
+            <p>
+                <br></br>
+                The aim of this project is to collect and visualize high spatio-temporal resolution urban air quality data in Seoul.
+                Air quality data are generally collected through fixed urban weather stations, which generally offer a low spatial resolution coverage.
+                We propose to use mobile sensing as a methodology to acquire data at higher spatial resolutions. Our method allows us to acquire the gradients of the contaminants concentration across the city, which allows us a better understanding of air quality dynamics to inform local environmental urban planning strategies.
+                While in order to acquire a city wide high resolution mapping of the air quality a large number of sensing kits would need to be installed, this experiment aims to provide an initial understanding of the extent to which contaminant concentrations vary across the researched area.
+            </p>
+        </div>
+        <div id="curve_chart" style="width: 100%; height: auto; min-height: 400px;"></div>
+        <div id="curve_chartTemp" style="width: 100%; height: auto; min-height: 400px;"></div>
+        <div id="curve_chartHum" style="width: 100%; height: auto; min-height: 400px;"></div>
+        <div id="curve_chartPart1" style="width: 100%; height: auto; min-height: 400px;"></div>
+        <div id="curve_chartO3" style="width: 100%; height: auto; min-height: 400px;"></div>
+        <div id="curve_chartBat" style="width: 100%; height: auto; min-height: 400px;"></div>
+
+        <br></br>
+        <br></br>
+        <!--<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d180794.0127903852!2d126.84946448859428!3d37.565017241788254!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca28b61c565cd%3A0x858aedb4e4ea83eb!2sSeoul%2C+South+Korea!5e1!3m2!1sen!2sus!4v1498858519291" width="1200" height="600" frameborder="0" style="border:0" allowfullscreen></iframe>
+        </div>-->
+        </div>
+
+        <!--MAPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP-->
+
+        <button type="button">Temperature</button>
+        <button type="button">Humidity</button>
+        <button type="button">CO2</button>
+
+    </body>
+</html>
